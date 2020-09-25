@@ -1,8 +1,10 @@
 library(shiny)
 library(ggplot2)
 library(factoextra)
+library(cluster)
 
 data <- iris
+set.seed(123)
 sepal_width<-iris$Sepal.Width
 sepal_length<-iris$Sepal.Length
 petal_width<-iris$Petal.Width
@@ -23,6 +25,11 @@ data_norm$Petal.Length.Norm = normal_func(data_norm, 3)
 data_norm$Petal.Width.Norm = normal_func(data_norm, 4)
 
 dataFinal = data_norm[,6:9]
+
+### Gap Statistic method
+gap_stat <- clusGap(dataFinal, FUN = kmeans, nstart = 10,
+ K.max = 10, B = 10)
+
 
 shinyServer(function(input, output) {
    
@@ -82,12 +89,25 @@ shinyServer(function(input, output) {
 	output$resultPlot <- renderPlot({
 		center <- input$kInput
 		k2 <- kmeans(dataFinal, center, nstart = 10)
-		fviz_cluster(k2, dataFinal, ellipse.type = "norm") 
+		fviz_cluster(k2, dataFinal, ellipse.type = "euclid") 
 	 
   })
 	
-	
-	    
+	output$methodPlot <- renderPlot({
+		mtd <- input$methods
+		if(mtd == "Elbow")
+		{
+			fviz_nbclust(dataFinal, kmeans, method = "wss")
+		}
+		else if(mtd == "Silhouette")
+		{
+			fviz_nbclust(dataFinal, kmeans, method = "silhouette")
+		}
+		else
+		{
+			fviz_gap_stat(gap_stat)
+		}	
+  })    
   
 }
 )
